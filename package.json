@@ -1,0 +1,19 @@
+{
+  "name": "chat",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "~4.4.1",
+    "socket.io": "~1.0.4",
+    "static-favicon": "*",
+    "morgan": "*",
+    "method-override": "*",
+    "cookie-parser": "*",
+    "express-session": "*",
+    "errorhandler": "*",
+    "sticky-session": "~0.1.0"
+  }
+}
