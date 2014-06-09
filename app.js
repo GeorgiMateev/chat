@@ -10,12 +10,31 @@ var sticky = require('sticky-sesion');
 var redis = require('socket.io-redis');
 var cpus = require('os').cpus().length;
 
-// Sticky-sessions module is balancing requests using their IP address.
-// Thus client will always connect to same worker server, and socket.io will work as expected, but on multiple processes.
-sticky(function (cpus) {
-    // A new proccess will be forked for every cpu
-    // This code will be executed only in slave workers
+//Parse command line parameters
+// -s - runs the app in a single thread
+var argv = require('minimist')(process.argv.slice(2));
 
+if (argv.s) {
+    // Run the application in a single thread
+    var server = setupApp();
+    server.listen(3000, function () {
+        console.log("Server started on a single thread on 3000 port");
+    });
+}
+else {
+    // Sticky-sessions module is balancing requests using their IP address.
+    // Thus client will always connect to same worker server, and socket.io will work as expected, but on multiple processes.
+    sticky(function (cpus) {
+        // A new proccess will be forked for every cpu
+        // This code will be executed only in slave workers
+
+        return setupApp();
+    }).listen(3000, function () {
+        console.log('server started on multiple processes on 3000 port');
+    });
+}
+
+function setupApp () {
     var app = express();
 
     // all environments
@@ -40,9 +59,11 @@ sticky(function (cpus) {
         console.log('socket connected to worker with pid ' + process.pid);
 
         io.sockets.emit("New connection");
+
+        socket.on("message", function (data) {
+            io.sockets.emit(data);
+        });
     });
 
     return server;
-}).listen(3000, function () {
-    console.log('server started on 3000 port');
-});
+}

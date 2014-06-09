@@ -14,6 +14,7 @@
     "cookie-parser": "*",
     "express-session": "*",
     "errorhandler": "*",
-    "sticky-session": "~0.1.0"
+    "sticky-session": "~0.1.0",
+    "minimist": "~0.1.0"
   }
 }
