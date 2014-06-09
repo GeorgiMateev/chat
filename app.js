@@ -5,8 +5,9 @@ var methodOverride = require('method-override');
 var cookieParser = require('cookie-parser');
 var session = require('express-session');
 var errorHandler = require('errorhandler');
+var path = require('path');
 
-var sticky = require('sticky-sesion');
+var sticky = require('sticky-session');
 var redis = require('socket.io-redis');
 var cpus = require('os').cpus().length;
 
@@ -46,13 +47,14 @@ function setupApp () {
     app.use(cookieParser('your secret here'));
     app.use(session());
 
-    var http = require('http'),
-        io = require('socket.io');
+    app.use(express.static(path.join(__dirname, 'public')));
+
+    var http = require('http');
 
     var server = http.createServer(app);
-    io.listen(server);
+    io = require('socket.io')(server);
 
-    //All sockets will be stored in Redis so they can retrive information from other workers
+    //All sockets will be stored in Redis so they can retrieve information from other workers
     io.adapter(redis({ host: 'localhost', port: 6379 }));
 
     io.sockets.on("connection", function (socket) {
@@ -61,7 +63,7 @@ function setupApp () {
         io.sockets.emit("New connection");
 
         socket.on("message", function (data) {
-            io.sockets.emit(data);
+            io.sockets.emit("new message", data);
         });
     });
 
