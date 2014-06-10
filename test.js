@@ -2,13 +2,24 @@
 // -m - number of messages to send from each sender
 // -s - number of senders that will send messages, each sender is in its own process
 // -l - number of listeners that should recieve messages, each listener is in its own process
+// -h - the host with the port of the server
 
 var argv = require('minimist')(process.argv.slice(2));
 
 var cluster = require('cluster');
 
+var host;
+if (argv.h) {
+    host = argv.h;
+}
+else {
+    host = 'http://localhost:' + (process.env.PORT || 3000);
+}
+
+console.log("Connected to server: "  + host + ". Use parameter -h to change.");
+
 function io() {
-    return require('socket.io-client')('http://localhost:' + (process.env.PORT || 3000));
+    return require('socket.io-client')(host);
 }
 
 function getTime() {
