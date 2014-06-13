@@ -7,18 +7,17 @@ var session = require('express-session');
 var errorHandler = require('errorhandler');
 var path = require('path');
 
-//Ensures that all messages for a socket will be sent to the process where the socket is hosted
-var sticky = require('sticky-session');
-
 //Allows messages to be sent to sockets hosted on other processes
 var redis = require('socket.io-redis');
 
-//A new process will be forked for each logical CPU
-var cpus = require('os').cpus().length;
-
 //Parse command line parameters
 // -s - runs the app in a single thread
+// -t - determines whether the app is in test mode
+// -c - determines the number of cpus to use;
 var argv = require('minimist')(process.argv.slice(2));
+
+//A new process will be forked for each logical CPU
+var cpus = argv.c ? argv.c : require('os').cpus().length;
 
 if (argv.s) {
     // Run the application in a single thread
@@ -30,7 +29,7 @@ if (argv.s) {
 else {
     // Sticky-sessions module is balancing requests using their IP address.
     // Thus client will always connect to same worker server, and socket.io will work as expected, but on multiple processes.
-    sticky(function (cpus) {
+    clusterize(cpus, function () {
         // A new proccess will be forked for every cpu
         // This code will be executed only in slave workers
         console.log("A process with pid "+ process.pid +" has been forked.");
@@ -40,12 +39,24 @@ else {
     });
 }
 
+function clusterize (cpus, worker) {
+    if (argv.t) {
+        //The connections to workers won't be distributed by remote ip
+        var cluster = require("./clusterize");
+        return cluster(cpus, worker);
+    }
+    else {
+        //Ensures that all messages for a socket will be sent to the process where the socket is hosted
+        var sticky = require('sticky-session');
+        return sticky(cpus, worker);
+    }
+}
+
 function setupApp () {
     var app = express();
 
     // all environments
     app.set('port', process.env.PORT || 3000);
-    app.set('views', path.join(__dirname, 'views'));
     //app.use(favicon(__dirname + '/public/favicon.ico'));
     app.use(logger('dev'));
     app.use(methodOverride());
@@ -53,11 +64,14 @@ function setupApp () {
     app.use(session());
 
     app.use(express.static(path.join(__dirname, 'public')));
+    app.get('/', function (req, res) {
+        res.send();
+    });
 
     var http = require('http');
 
     var server = http.createServer(app);
-    io = require('socket.io')(server);
+    io = require('socket.io').listen(server);
 
     //All sockets will be stored in Redis so they can retrieve information from other workers
     io.adapter(redis({ host: 'localhost', port: 6379 }));

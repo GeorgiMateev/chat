@@ -16,7 +16,6 @@ else {
     host = 'http://localhost:' + (process.env.PORT || 3000);
 }
 
-console.log("Connected to server: "  + host + ". Use parameter -h to change.");
 
 function io() {
     return require('socket.io-client')(host);
@@ -59,6 +58,8 @@ var listenerMessagesCount = messagesCount * emittersCount;
 
 
 if (cluster.isMaster) {
+    console.log("Connected to server: "  + host + ". Use parameter -h to change.");
+
     var finishedProcessesCount = 0;    
     var averageRoundTripTime = 0;
     var averageElapsedTime = 0;
@@ -104,6 +105,7 @@ else {
     if(process.env.type == "listen"){
         var socket = io();
         socket.on("connect", function () {
+            console.log("Listener connected.");
             socket.on("new message", function (data) {
                 recievedMessages++;
 
@@ -120,7 +122,8 @@ else {
 
     if (process.env.type == "emit") {
         var emitterSocket = io();
-        emitterSocket.on("connect", function(){
+        emitterSocket.on("connect", function () {
+            console.log("Sender connected.");
             process.send({ time: getTime() });
 
             for (var i = 0; i < messagesCount; i++) {
