@@ -7,9 +7,6 @@ var session = require('express-session');
 var errorHandler = require('errorhandler');
 var path = require('path');
 
-//Allows messages to be sent to sockets hosted on other processes
-var redis = require('socket.io-redis');
-
 //Parse command line parameters
 // -s - runs the app in a single thread
 // -t - determines whether the app is in test mode
@@ -73,8 +70,18 @@ function setupApp () {
     var server = http.createServer(app);
     io = require('socket.io').listen(server);
 
-    //All sockets will be stored in Redis so they can retrieve information from other workers
-    io.adapter(redis({ host: 'localhost', port: 6379 }));
+    var redisClient;
+    try {
+        redisClient = require('redis').createClient(6379, 'localhost');
+        redisClient.ping();
+
+        //Allows messages to be sent to sockets hosted on other processes
+        var redisAdapter = require('socket.io-redis');     
+        io.adapter(redisAdapter({ host: 'localhost', port: 6379 }));
+    }
+    catch (e) {
+        console.error("Failed to connect to redis. Inner error: " + e.message);
+    }
 
     io.sockets.on("connection", function (socket) {
         console.log('socket connected to worker with pid ' + process.pid);
@@ -83,6 +90,93 @@ function setupApp () {
 
         socket.on("message", function (data) {
             io.sockets.emit("new message", data);
+        });
+
+        //Attempt to register username
+        //Emits back userExists if the user exists
+        socket.on("userRegister", function (username) {
+            if (redisClient.exists(data)) {
+                socket.emit("userExists", { code: 100, message: "Already taken." });
+            }
+            else {
+                //to be able to get the username from id and vice versa with constant time
+                redisClient.set("user:" + username, socket.id);
+                redisClient.set("userid:" + socket.id, username);
+                socket.emit("userRegisterSuccess", { code: 200, message: "User registered." });
+                io.emit("userRegistered", username);
+            }
+        });
+
+        //Sends message to user
+        //Emits back messageRecipientNotFound if there is no such user.
+        //Emits back senderNotValid if the sender is not registered or belongs to different socket.
+        socket.on("messageSend", function (data) {
+            var toUsername = data.to;
+            var fromUsername = data.from;
+            var message = data.message;
+
+            var fromId = redisClient.get("user:" + fromUsername);
+
+            if (!fromId || fromId != socket.id) {
+                socket.emit("senderNotValid", { code: 101, message: "The sender is not registered or invalid." });
+            }
+            else if (redisClient.exists("user:" + toUsername)) {
+                socket.emit("messageRecipientNotFound", { code: 100, message: "No such user." });
+            }
+            else {
+                var toId = redisClient.get("user:" + toUsername);
+
+                socket.emit("messageSendSuccess", { code: 200, message: "Message sent." });
+                io.to(toId).emit("messageSend", { sender: fromUsername, message: message });
+            }
+        });
+
+        //Sends message to all users
+        //Emits back senderNotValid if the sender is not registered or belongs to different socket.
+        socket.on("messageSendAll", function (data) {
+            var fromUsername = data.from;
+            var message = data.message;
+
+            var fromId = redisClient.get("user:" + fromUsername);
+
+            if (!fromId || fromId != socket.id) {
+                socket.emit("messageSenderNotValid", { code: 101, message: "The sender is not registered or invalid." });
+            }
+            else {
+                socket.emit("messageSendSuccess", { code: 200, message: "Message sent." });
+                io.emit("messageSendAll", { sender: fromUsername, message: message });
+            }
+        });
+
+        //Requests list of all registered users
+        //Emits back senderNotValid if the sender is not registered or belongs to different socket.
+        socket.on("usersGetAll", function (data) {
+            var fromUsername = data.from;
+            var message = data.message;
+
+            var fromId = redisClient.get("user:" + fromUsername);
+
+            if (!fromId || fromId != socket.id) {
+                socket.emit("senderNotValid", { code: 101, message: "The sender is not registered or invalid." });
+            }
+            else {
+                //Runs with O(n) complexity where n is the number of all keys. May cause performance issues. Consider storing usernames in sets.
+                var users = redisClient.keys("user:*").map(function (userKey) {
+                    var parts = userKey.split(':');
+                    return parts[1];
+                });
+
+                socket.emit("usersGetAllSuccess", users);
+            }
+        });
+
+        //Removes the user from the database
+        socket.on("disconnect", function () {
+            var username = redisClient.get("userid:" + socket.id);
+            redisClient.del("user:" + username);
+            redisClient.del("userid:" + socket.id);
+
+            io.emit("userLeft", username);
         });
     });
 
