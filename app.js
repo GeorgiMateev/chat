@@ -61,9 +61,14 @@ function setupApp () {
     app.use(session());
 
     app.use(express.static(path.join(__dirname, 'public')));
-    app.get('/', function (req, res) {
-        res.send();
+
+    //Ensure that all url are redirected to index.html/#![path].
+    //This will allow Angular to handle all url paths in Html5 mode and fallback to hashbang mode if needed.
+   app.use('*', function(req, res){
+        //res.sendfile(path.join(__dirname, 'public/index.html'));
+        return res.redirect(req.protocol + '://' + req.get('Host') + '/#!' + req.url);
     });
+
 
     var http = require('http');
 
