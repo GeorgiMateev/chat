@@ -1,1 +1,25 @@
 <h1>Chat!</h1>
+<p>Online users. Select one to chat.</p>
+<ul>
+    <li ng-repeat="user in users">
+        <a ng-bind="user.name" ng-click="openRoom(user.name)"></a>
+    </li>
+</ul>
+
+<p>Chat rooms:</p>
+<ul>
+    <li ng-repeat="room in rooms">
+        <div class="chatroom">
+            <a ng-click="closeRoom(room.name)">Close</a>
+            <ul>
+                <li ng-repeat="message in room.messages" class="message">
+                    <b><span ng-bind="message.date"></span></b>
+                    <b><span ng-bind="message.sender"></span></b><br/>
+                    <p ng-bind="message.message"></p>
+                </li>
+            </ul>
+            <input type="text" ng-model="room.messageInput"/>
+            <input type="submit" value="Send" ng-model="sendMessage(room)"/>
+        </div>
+    </li>
+</ul>

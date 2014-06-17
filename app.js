@@ -91,6 +91,7 @@ function setupApp () {
     io.sockets.on("connection", function (socket) {
         console.log('socket connected to worker with pid ' + process.pid);
 
+        //used for test purposes
         io.sockets.emit("New connection");
 
         socket.on("message", function (data) {
@@ -132,7 +133,11 @@ function setupApp () {
                 var toId = redisClient.get("user:" + toUsername);
 
                 socket.emit("messageSendSuccess", { code: 200, message: "Message sent." });
-                io.to(toId).emit("messageSend", { sender: fromUsername, message: message });
+                io.to(toId).emit("messageSend", { 
+                    sender: fromUsername,
+                    message: message,
+                    date: new Date() 
+                });
             }
         });
 
@@ -145,11 +150,15 @@ function setupApp () {
             var fromId = redisClient.get("user:" + fromUsername);
 
             if (!fromId || fromId != socket.id) {
-                socket.emit("messageSenderNotValid", { code: 101, message: "The sender is not registered or invalid." });
+                socket.emit("senderNotValid", { code: 101, message: "The sender is not registered or invalid." });
             }
             else {
                 socket.emit("messageSendSuccess", { code: 200, message: "Message sent." });
-                io.emit("messageSendAll", { sender: fromUsername, message: message });
+                io.emit("messageSendAll", {
+                    sender: fromUsername,
+                    message: message,
+                    date: new Date()
+                });
             }
         });
 
@@ -157,7 +166,6 @@ function setupApp () {
         //Emits back senderNotValid if the sender is not registered or belongs to different socket.
         socket.on("usersGetAll", function (data) {
             var fromUsername = data.from;
-            var message = data.message;
 
             var fromId = redisClient.get("user:" + fromUsername);
 
