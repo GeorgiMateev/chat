@@ -30,6 +30,7 @@ define(["controllers/module"], function (controllers) {
              alert("You are trying to send a message to a user that doesn't exist.");
          });
 
+         //A new user has been registered
          webSocketService.on("userRegistered", function (username) {
              applyCallback(function () {
                  $scope.users[username] = { name: username };

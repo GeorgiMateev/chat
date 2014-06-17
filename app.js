@@ -108,7 +108,7 @@ function setupApp () {
                 //to be able to get the username from id and vice versa with constant time
                 redisClient.set("user:" + username, socket.id);
                 redisClient.set("userid:" + socket.id, username);
-                socket.emit("userRegisterSuccess", { code: 200, message: "User registered." });
+                socket.emit("userRegisterSuccess", { code: 200, message: "User registered.", username: username });
                 io.emit("userRegistered", username);
             }
         });
@@ -133,10 +133,10 @@ function setupApp () {
                 var toId = redisClient.get("user:" + toUsername);
 
                 socket.emit("messageSendSuccess", { code: 200, message: "Message sent." });
-                io.to(toId).emit("messageSend", { 
+                io.to(toId).emit("messageSend", {
                     sender: fromUsername,
                     message: message,
-                    date: new Date() 
+                    date: new Date()
                 });
             }
         });

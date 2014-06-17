@@ -1,6 +1,6 @@
-define(["angular", "controllers/loader", "services/loader", "ngRoute", "ngSanitize"],
+define(["angular", "controllers/loader", "services/loader","directives/loader", "ngRoute", "ngSanitize"],
     function (angular) {
-        var module = angular.module('chat', ['chat.controllers', 'chat.services', 'ngRoute', 'ngSanitize'])
+        var module = angular.module('chat', ['chat.controllers', 'chat.services', 'chat.direcrives', 'ngRoute', 'ngSanitize'])
           .config(function ($routeProvider, $locationProvider) {
               $routeProvider.otherwise("/");
 
