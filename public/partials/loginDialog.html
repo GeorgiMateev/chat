@@ -1,6 +1,10 @@
-<div ng-show="showLogin" class="loginDialog">
-    <input type="text" ng-model="username"/><br/>
-    <span class="errorMessage" ng-show="error" ng-bind="errorMessage"></span>
+<div class="modal" role=dialog>
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content login-dialog">
+            <input type="text" ng-model="username"/><br/>
+            <span class="errorMessage" ng-show="error" ng-bind="errorMessage"></span>
 
-    <input type="button" ng-click="register()" />
+            <input type="button" ng-click="register()" value="Register"/>
+        </div>
+    </div>
 </div>

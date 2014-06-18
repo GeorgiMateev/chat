@@ -7,7 +7,7 @@ define(["controllers/module"], function (controllers) {
          var allUsersRoom = "allUsersRoom";
 
          $rootScope.$on("loggedIn", function () {
-             var username = $cacheFactory.get("username");
+             var username = $cacheFactory.get("login").get("username");
              webSocketService.send("usersGetAll", { from: username });
          });
 
@@ -71,7 +71,7 @@ define(["controllers/module"], function (controllers) {
          };
 
          $scope.sendMessage = function (room) {
-             var username = $cacheFactory.get("username");
+             var username = $cacheFactory.get("login").get("username");
              var message = {
                  from: username,
                  to: room.name,

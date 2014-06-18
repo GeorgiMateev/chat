@@ -6,6 +6,7 @@ var cookieParser = require('cookie-parser');
 var session = require('express-session');
 var errorHandler = require('errorhandler');
 var path = require('path');
+var Q = require('q');
 
 //Parse command line parameters
 // -s - runs the app in a single thread
@@ -101,16 +102,18 @@ function setupApp () {
         //Attempt to register username
         //Emits back userExists if the user exists
         socket.on("userRegister", function (username) {
-            if (redisClient.exists(data)) {
-                socket.emit("userExists", { code: 100, message: "Already taken." });
-            }
-            else {
-                //to be able to get the username from id and vice versa with constant time
-                redisClient.set("user:" + username, socket.id);
-                redisClient.set("userid:" + socket.id, username);
-                socket.emit("userRegisterSuccess", { code: 200, message: "User registered.", username: username });
-                io.emit("userRegistered", username);
-            }
+            redisClient.exists(username, function (err, reply) {
+                if (reply) {
+                    socket.emit("userExists", { code: 100, message: "Already taken." });
+                }
+                else {
+                    //to be able to get the username from id and vice versa with constant time
+                    redisClient.set("user:" + username, socket.id);
+                    redisClient.set("userid:" + socket.id, username);
+                    socket.emit("userRegisterSuccess", { code: 200, message: "User registered.", username: username });
+                    io.emit("userRegistered", username);
+                }
+            });
         });
 
         //Sends message to user
@@ -185,11 +188,14 @@ function setupApp () {
 
         //Removes the user from the database
         socket.on("disconnect", function () {
-            var username = redisClient.get("userid:" + socket.id);
-            redisClient.del("user:" + username);
-            redisClient.del("userid:" + socket.id);
+            redisClient.get("userid:" + socket.id,
+                function (err, reply) {
+                    var username = reply;
+                    redisClient.del("user:" + username);
+                    redisClient.del("userid:" + socket.id);
 
-            io.emit("userLeft", username);
+                    io.emit("userLeft", username);
+                });
         });
     });
 

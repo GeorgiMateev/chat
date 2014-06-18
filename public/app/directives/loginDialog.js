@@ -1,26 +1,26 @@
-define(["directives/module", function (directives) {
-    directives.directive("loginDialog", ["$rootScope", "$cacheFactory", "webSocketService",
+define(["directives/module", "bootstrap"], function (directives) {
+    directives.directive("loginDialog", ["$rootScope", "$cacheFactory", "WebSocketService",
      function ($rootScope, $cacheFactory, webSocketService) {
          return {
-             restrict: 'AE',
+             restrict: 'EA',
+             replace: true,
              templateUrl: 'partials/loginDialog.html',
              link: function (scope, element, attrs) {
-                 webSocketService.on("connection", function () {
+                 webSocketService.on("connect", function () {
                      scope.$apply(function () {
-                         scope.showLogin = true;
                          scope.error = false;
-                         scope.showLogin = true;
-                         $cacheFactory.remove("username");
+                         element.modal("show");
                      });
                  });
 
                  webSocketService.on("userRegisterSuccess", function (message) {
                      scope.$apply(function () {
                          var username = message.username;
-                         $cacheFactory.set("username", username);
+                         var cache = $cacheFactory("login");
+                         cache.put("username", username);
                          scope.error = false;
-                         scope.showLogin = false;
-                         $rootScope.emit("loggedIn");
+                         element.modal("hide");
+                         $rootScope.$emit("loggedIn");
                      });
                  });
 
@@ -43,8 +43,11 @@ define(["directives/module", function (directives) {
                      }
                  };
 
-                 //TODO: make it modal
+                 element.modal({
+                     keyboard: false,
+                     show: false
+                 });
              }
          };
      } ]);
-} ]);
+});
