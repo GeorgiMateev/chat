@@ -1,3 +1,46 @@
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.users {
+    margin: 10px;
+}
+.users li {
+    margin: 10px;
+    cursor: pointer;
+}
+
 .login-dialog {
     padding: 20px;
+}
+
+.chatroom {
+    width: 280px;    
+    border: 1px solid black;
+    padding: 0;
+    margin: 10px;
+    padding: 10px;
+    position: relative;
+}
+.chatroom ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.rooms li {
+    float: left;    
+}
+
+.messages {
+    overflow-y: scroll;
+    height: 300px;
+    margin-bottom: 50px;    
+}
+.messages li {
+    width: 100%;
+}
+.type-new-message {
+    position: absolute;
+    bottom: 10px;
 }

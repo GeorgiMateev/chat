@@ -4,6 +4,7 @@ define(["directives/module", "bootstrap"], function (directives) {
          return {
              restrict: 'EA',
              replace: true,
+             scope:true,
              templateUrl: 'partials/loginDialog.html',
              link: function (scope, element, attrs) {
                  webSocketService.on("connect", function () {

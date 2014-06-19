@@ -1,20 +1,20 @@
 define(["controllers/module"], function (controllers) {
     controllers.controller("ChatCtrl", ["$scope", "$rootScope", "$cacheFactory", "WebSocketService",
      function ($scope, $rootScope, $cacheFactory, webSocketService) {
-         $scope.users = [];
-         $scope.rooms = [];
-
+         $scope.users = {};
+         $scope.rooms = {};
          var allUsersRoom = "allUsersRoom";
 
          $rootScope.$on("loggedIn", function () {
              var username = $cacheFactory.get("login").get("username");
+             $scope.username = username;
              webSocketService.send("usersGetAll", { from: username });
+             $scope.openRoom(allUsersRoom, "All users", true);
          });
 
          webSocketService.on("usersGetAllSuccess", function (users) {
              applyCallback(function () {
-                 //reuse the array to keep the angular binding
-                 $scope.usernames.length = 0;
+
                  for (var i = 0, l = users.length; i < l; i++) {
                      var user = users[i];
                      $scope.users[user] = { name: user };
@@ -34,7 +34,6 @@ define(["controllers/module"], function (controllers) {
          webSocketService.on("userRegistered", function (username) {
              applyCallback(function () {
                  $scope.users[username] = { name: username };
-                 $scope.rooms[allUsersRoom] = { name: allUsersRoom };
              });
          });
 
@@ -47,6 +46,10 @@ define(["controllers/module"], function (controllers) {
          webSocketService.on("messageSend", function (message) {
              applyCallback(function () {
                  var room = $scope.rooms[message.sender];
+                 if (!room) {
+                     room = $scope.openRoom(message.sender);
+                 }
+
                  room.messages.push(message);
              });
          });
@@ -54,16 +57,27 @@ define(["controllers/module"], function (controllers) {
          webSocketService.on("messageSendAll", function (message) {
              applyCallback(function () {
                  var room = $scope.rooms[allUsersRoom];
+                 if (!room) {
+                     room = $scope.openRoom(allUsersRoom);
+                 }
                  room.messages.push(message);
              });
          });
 
-         $scope.openRoom = function (name) {
+         $scope.openRoom = function (name, title, showSender) {
              if ($scope.rooms[name]) {
                  return;
              }
 
-             $scope.rooms[name] = { name: name };
+             var title = title || name;
+
+             $scope.rooms[name] = {
+                 name: name,
+                 title: title,
+                 showSender: showSender,
+                 messages: []
+             };
+             return $scope.rooms[name];
          };
 
          $scope.closeRoom = function (name) {
@@ -75,14 +89,18 @@ define(["controllers/module"], function (controllers) {
              var message = {
                  from: username,
                  to: room.name,
-                 message: room.messageInput
+                 message: room.messageInput,
              };
 
-             if (room.name == "allUsersRoom") {
-                 webSocketService.send("messageSendAll");
+             if (room.name == allUsersRoom) {
+                 webSocketService.send("messageSendAll", message);
              } else {
-                 webSocketService.send("messageSend");
+                 webSocketService.send("messageSend", message);
              }
+
+             message.sender = username;
+             message.date = new Date();
+             $scope.rooms[room.name].messages.push(message);
          };
 
          //returns a element from a array in the $scope

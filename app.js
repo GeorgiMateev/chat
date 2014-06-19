@@ -9,9 +9,11 @@ var path = require('path');
 var Q = require('q');
 
 //Parse command line parameters
-// -s - runs the app in a single thread
-// -t - determines whether the app is in test mode
-// -c - determines the number of cpus to use;
+console.log(
+" -s - runs the app in a single thread\n\r" +
+" -t - determines whether the app is in test mode\n\r" +
+" -c - determines the number of cpus to use");
+
 var argv = require('minimist')(process.argv.slice(2));
 
 //A new process will be forked for each logical CPU
@@ -70,7 +72,6 @@ function setupApp () {
         return res.redirect(req.protocol + '://' + req.get('Host') + '/#!' + req.url);
     });
 
-
     var http = require('http');
 
     var server = http.createServer(app);
@@ -111,7 +112,7 @@ function setupApp () {
                     redisClient.set("user:" + username, socket.id);
                     redisClient.set("userid:" + socket.id, username);
                     socket.emit("userRegisterSuccess", { code: 200, message: "User registered.", username: username });
-                    io.emit("userRegistered", username);
+                    socket.broadcast.emit("userRegistered", username);
                 }
             });
         });
@@ -124,24 +125,27 @@ function setupApp () {
             var fromUsername = data.from;
             var message = data.message;
 
-            var fromId = redisClient.get("user:" + fromUsername);
+            Q.spread([
+                Q.ninvoke(redisClient, "get", "user:" + fromUsername),
+                Q.ninvoke(redisClient, "get", "user:" + toUsername)],
+                    function (fromId, toId) {
+                        if (!fromId || fromId != socket.id) {
+                            socket.emit("senderNotValid", { code: 101, message: "The sender is not registered or invalid." });
+                        }
+                        else if (!toId) {
+                            socket.emit("messageRecipientNotFound", { code: 100, message: "No such user." });
+                        }
+                        else {
+                            io.to(toId).emit("messageSend", {
+                                sender: fromUsername,
+                                message: message,
+                                date: new Date()
+                            });
 
-            if (!fromId || fromId != socket.id) {
-                socket.emit("senderNotValid", { code: 101, message: "The sender is not registered or invalid." });
-            }
-            else if (redisClient.exists("user:" + toUsername)) {
-                socket.emit("messageRecipientNotFound", { code: 100, message: "No such user." });
-            }
-            else {
-                var toId = redisClient.get("user:" + toUsername);
+                            socket.emit("messageSendSuccess", { code: 200, message: "Message sent." });
+                        }
 
-                socket.emit("messageSendSuccess", { code: 200, message: "Message sent." });
-                io.to(toId).emit("messageSend", {
-                    sender: fromUsername,
-                    message: message,
-                    date: new Date()
-                });
-            }
+                    });
         });
 
         //Sends message to all users
@@ -150,19 +154,20 @@ function setupApp () {
             var fromUsername = data.from;
             var message = data.message;
 
-            var fromId = redisClient.get("user:" + fromUsername);
-
-            if (!fromId || fromId != socket.id) {
-                socket.emit("senderNotValid", { code: 101, message: "The sender is not registered or invalid." });
-            }
-            else {
-                socket.emit("messageSendSuccess", { code: 200, message: "Message sent." });
-                io.emit("messageSendAll", {
-                    sender: fromUsername,
-                    message: message,
-                    date: new Date()
-                });
-            }
+            Q.ninvoke(redisClient, "get", "user:" + fromUsername)
+            .then(function(fromId){
+                    if (!fromId || fromId != socket.id) {
+                    socket.emit("senderNotValid", { code: 101, message: "The sender is not registered or invalid." });
+                }
+                else {
+                    socket.emit("messageSendSuccess", { code: 200, message: "Message sent." });
+                    socket.broadcast.emit("messageSendAll", {
+                        sender: fromUsername,
+                        message: message,
+                        date: new Date()
+                    });
+                }
+            });
         });
 
         //Requests list of all registered users
@@ -170,20 +175,31 @@ function setupApp () {
         socket.on("usersGetAll", function (data) {
             var fromUsername = data.from;
 
-            var fromId = redisClient.get("user:" + fromUsername);
+            Q.ninvoke(redisClient, "get", "user:" + fromUsername)
+            .then(function (fromId) {
+                if (!fromId || fromId != socket.id) {
+                    socket.emit("senderNotValid", { code: 101, message: "The sender is not registered or invalid." });
+                    return false;
+                }
 
-            if (!fromId || fromId != socket.id) {
-                socket.emit("senderNotValid", { code: 101, message: "The sender is not registered or invalid." });
-            }
-            else {
-                //Runs with O(n) complexity where n is the number of all keys. May cause performance issues. Consider storing usernames in sets.
-                var users = redisClient.keys("user:*").map(function (userKey) {
-                    var parts = userKey.split(':');
-                    return parts[1];
-                });
-
-                socket.emit("usersGetAllSuccess", users);
-            }
+                return true;
+            })
+            .then(function (valid) {
+                if (valid) {
+                    //Runs with O(n) complexity where n is the number of all keys. May cause performance issues. Consider storing usernames in sets.
+                    return Q.ninvoke(redisClient, "keys", "user:*");
+                }
+                return false;
+            })
+            .then(function (keys) {
+                if (keys) {
+                    var users = keys.map(function (userKey) {
+                        var parts = userKey.split(':');
+                        return parts[1];
+                    });
+                    socket.emit("usersGetAllSuccess", users);
+                }
+            });
         });
 
         //Removes the user from the database

@@ -1,27 +1,37 @@
 <div login-dialog></div>
 
-<h1>Chat!</h1>
-<p>Online users. Select one to chat.</p>
-<ul>
-    <li ng-repeat="user in users">
-        <a ng-bind="user.name" ng-click="openRoom(user.name)"></a>
-    </li>
-</ul>
+<div class="row">
+    <h1>Chat!</h1>
 
-<p>Chat rooms:</p>
-<ul>
-    <li ng-repeat="room in rooms">
-        <div class="chatroom">
-            <a ng-click="closeRoom(room.name)">Close</a>
-            <ul>
-                <li ng-repeat="message in room.messages" class="message">
-                    <b><span ng-bind="message.date"></span></b>
-                    <b><span ng-bind="message.sender"></span></b><br/>
-                    <p ng-bind="message.message"></p>
-                </li>
-            </ul>
-            <input type="text" ng-model="room.messageInput"/>
-            <input type="submit" value="Send" ng-model="sendMessage(room)"/>
-        </div>
-    </li>
-</ul>
+    <div class="col-lg-2">
+        <p>Online users</p>
+        <ul class="users">
+            <li ng-repeat="(username, user) in users">
+                <a ng-bind="user.name" ng-click="openRoom(user.name)"></a>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="col-lg-10">
+        <ul class="rooms clearfix">
+            <li ng-repeat="(roomname, room) in rooms">
+                <div class="chatroom">
+                    <h3 ng-bind="room.title"></h3>
+                    <a ng-click="closeRoom(room.name)">Close</a>
+                    <ul class="messages">
+                        <li ng-repeat="message in room.messages" class="message">
+                            <b><span>{{ message.date | date : 'HH:mm' }}</span></b>
+                            <b><span ng-bind="message.sender"></span></b><br/>
+                            <p ng-bind="message.message"></p>
+                        </li>
+                    </ul>
+
+                    <div class="type-new-message">
+                        <input type="text" ng-model="room.messageInput"/>
+                        <input type="submit" value="Send" ng-click="sendMessage(room)"/>
+                    </div>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
