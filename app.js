@@ -32,7 +32,7 @@ else {
     clusterize(cpus, function () {
         // A new proccess will be forked for every cpu
         // This code will be executed only in slave workers
-        console.log("A process with pid "+ process.pid +" has been forked.");
+        console.log("A process with pid " + process.pid + " has been forked.");
         return setupApp();
     }).listen(3000, function () {
         console.log('Server started on multiple processes on 3000 port');
@@ -79,6 +79,11 @@ function setupApp () {
     //End point for load testing
     app.get('/test', function (req, res) {
         res.send("I recived your test message!");
+    });
+
+    app.get('/', function (req, res, next) {
+        res.sendfile(path.join(__dirname, 'public/index.html'));
+        next();
     });
 
     app.use(express.static(path.join(__dirname, 'public')));    
