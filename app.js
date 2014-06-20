@@ -63,14 +63,32 @@ function setupApp () {
     app.use(cookieParser('your secret here'));
     app.use(session());
 
-    app.use(express.static(path.join(__dirname, 'public')));
+    //returns the source code of the application in .tar.gz file
+    app.get('/source', function(req, res){
+        var fstream = require('fstream'),
+        tar = require('tar'),
+        zlib = require('zlib');
+
+        fstream.Reader({ 'path': 'E:\\Development\\chat', 'type': 'Directory' }) /* Read the source directory */
+        .pipe(tar.Pack()) /* Convert the directory to a .tar file */
+        .pipe(zlib.Gzip()) /* Compress the .tar file */
+        //.pipe(fstream.Writer({ 'path': 'chat.tar.gz' }))
+        .pipe(res);
+    });
+
+    //End point for load testing
+    app.get('/test', function (req, res) {
+        res.send("I recived your test message!");
+    });
+
+    app.use(express.static(path.join(__dirname, 'public')));    
 
     //Ensure that all url are redirected to index.html/#![path].
     //This will allow Angular to handle all url paths in Html5 mode and fallback to hashbang mode if needed.
-   app.use('*', function(req, res){
-        //res.sendfile(path.join(__dirname, 'public/index.html'));
-        return res.redirect(req.protocol + '://' + req.get('Host') + '/#!' + req.url);
-    });
+    //app.use('*', function(req, res){
+    //    //res.sendfile(path.join(__dirname, 'public/index.html'));
+    //    return res.redirect(req.protocol + '://' + req.get('Host') + '/#!' + req.url);
+    //});
 
     var http = require('http');
 

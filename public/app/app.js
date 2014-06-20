@@ -11,7 +11,7 @@ define(["angular", "controllers/loader", "services/loader", "directives/loader",
                      });
 
               // use the HTML5 History API
-              $locationProvider.html5Mode(true).hashPrefix('!');
+              //$locationProvider.html5Mode(true).hashPrefix('!');
           });
 
         return module;
