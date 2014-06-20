@@ -9,10 +9,10 @@ var path = require('path');
 var Q = require('q');
 
 //Parse command line parameters
-console.log(
-" -s - runs the app in a single thread\n\r" +
-" -t - determines whether the app is in test mode\n\r" +
-" -c - determines the number of cpus to use");
+
+// -s - runs the app in a single thread
+// -t - determines whether the app is in test mode
+// -c - determines the number of cpus to use
 
 var argv = require('minimist')(process.argv.slice(2));
 
@@ -35,7 +35,7 @@ else {
         console.log("A process with pid " + process.pid + " has been forked.");
         return setupApp();
     }).listen(3000, function () {
-        console.log('Server started on multiple processes on 3000 port');
+        console.log('Server started on a process on 3000 port');
     });
 }
 
@@ -58,7 +58,7 @@ function setupApp () {
     // all environments
     app.set('port', process.env.PORT || 3000);
     //app.use(favicon(__dirname + '/public/favicon.ico'));
-    app.use(logger('dev'));
+    //app.use(logger('dev'));
     app.use(methodOverride());
     app.use(cookieParser('your secret here'));
     app.use(session());
