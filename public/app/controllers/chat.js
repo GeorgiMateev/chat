@@ -12,6 +12,10 @@ define(["controllers/module"], function (controllers) {
              $scope.openRoom(allUsersRoom, "All users", true);
          });
 
+         webSocketService.onFile("fileSend", function(){
+             
+         });
+
          webSocketService.on("usersGetAllSuccess", function (users) {
              applyCallback(function () {
 

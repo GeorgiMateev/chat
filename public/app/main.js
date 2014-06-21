@@ -7,7 +7,8 @@ require.config({
         jquery: "../bower_components/jquery/dist/jquery.min",
         bootstrap: "../bower_components/bootstrap/dist/js/bootstrap.min",
         domReady: "../bower_components/requirejs-domready/domReady",
-        io: "/socket.io/socket.io"
+        io: "/socket.io/socket.io",
+        ss: "lib/socket.io-stream"
     },
     shim: {
         angular: {
@@ -26,6 +27,10 @@ require.config({
 
         io: {
             exports: "io"
+        },
+
+        ss: {
+            exports: "ss"
         }
     }
 });

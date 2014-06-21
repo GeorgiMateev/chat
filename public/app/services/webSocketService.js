@@ -1,4 +1,4 @@
-define(["io", "services/module"], function (io, services) {
+define(["io", "services/module", "ss"], function (io, services) {
     services.service("WebSocketService", ["$location", WebSocketService]);
 
     function WebSocketService($location) {
@@ -16,6 +16,12 @@ define(["io", "services/module"], function (io, services) {
             this.socket.on(event, function (data) {
                 callback(data);
             });
+        },
+
+        onFile: function (event, callback) {
+            ss(this.socket.on(event, function (stream, data) {
+                
+            }));
         }
     };
 });

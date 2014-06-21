@@ -6,6 +6,7 @@ var cookieParser = require('cookie-parser');
 var session = require('express-session');
 var errorHandler = require('errorhandler');
 var path = require('path');
+var ss = require('socket.io-stream');
 var Q = require('q');
 
 //Parse command line parameters
@@ -235,6 +236,35 @@ function setupApp () {
 
                     io.emit("userLeft", username);
                 });
+        });
+
+        //The user wants to send a file
+        ss(socket).on('fileSend', function(stream, data) {
+            var filename = path.basename(data.filename);
+
+            var toUsername = data.to;
+            var fromUsername = data.from;
+
+            Q.spread([
+                Q.ninvoke(redisClient, "get", "user:" + fromUsername),
+                Q.ninvoke(redisClient, "get", "user:" + toUsername)],
+                    function (fromId, toId) {
+                        if (!fromId || fromId != socket.id) {
+                            socket.emit("senderNotValid", { code: 101, message: "The sender is not registered or invalid." });
+                        }
+                        else if (!toId) {
+                            socket.emit("messageRecipientNotFound", { code: 100, message: "No such user." });
+                        }
+                        else {
+                            ss(io.to(toId)).emit("messageSend", stream, {
+                                sender: fromUsername,
+                                filename: message,
+                                date: new Date()
+                            });
+
+                            socket.emit("fileSendSuccess", { code: 200, message: "File sent." });
+                        }
+                    });
         });
     });
 
